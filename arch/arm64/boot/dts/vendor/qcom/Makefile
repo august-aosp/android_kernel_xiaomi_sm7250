@@ -1,3 +1,5 @@
+ifeq ($(CONFIG_BOARD_XIAOMI),y)
+
 ifeq ($(CONFIG_BOARD_XIAOMI_SM8250),y)
 ifeq ($(CONFIG_BUILD_ARM64_DT_OVERLAY),y)
 
@@ -61,8 +63,8 @@ dtbo-$(CONFIG_BOARD_UMI) += \
 umi-sm8250-overlay.dtbo-base := kona.dtb kona-v2.dtb kona-v2.1.dtb
 endif
 
-endif
-endif
+endif # CONFIG_BUILD_ARM64_DT_OVERLAY
+endif # CONFIG_BOARD_XIAOMI_SM8250
 
 ifeq ($(CONFIG_BOARD_XIAOMI_SM7250),y)
 ifeq ($(CONFIG_BUILD_ARM64_DT_OVERLAY),y)
@@ -70,29 +72,26 @@ ifeq ($(CONFIG_BUILD_ARM64_DT_OVERLAY),y)
 ifeq ($(CONFIG_BOARD_MONET),y)
 dtbo-$(CONFIG_BOARD_MONET) += \
                 monet-sm7250-overlay.dtbo
-dtb-$(CONFIG_BOARD_MONET) += \
-                monet-sm7250.dtb
 monet-sm7250-overlay.dtbo-base := lito.dtb lito-v2.dtb
 endif
 
 ifeq ($(CONFIG_BOARD_PICASSO),y)
 dtbo-$(CONFIG_BOARD_PICASSO) += \
                 picasso-sm7250-overlay.dtbo
-dtb-$(CONFIG_BOARD_PICASSO) += \
-                picasso-sm7250.dtb
 picasso-sm7250-overlay.dtbo-base := lito.dtb lito-v2.dtb
 endif
 
 ifeq ($(CONFIG_BOARD_VANGOGH),y)
 dtbo-$(CONFIG_BOARD_VANGOGH) += \
                 vangogh-sm7250-overlay.dtbo
-dtb-$(CONFIG_BOARD_VANGOGH) += \
-                vangogh-sm7250.dtb
 vangogh-sm7250-overlay.dtbo-base := lito.dtb lito-v2.dtb
 endif
 
-endif
-else
+endif # CONFIG_BUILD_ARM64_DT_OVERLAY
+endif # CONFIG_BOARD_XIAOMI_SM7250
+
+else # CONFIG_BOARD_XIAOMI
+
 ifeq ($(CONFIG_BUILD_ARM64_DT_OVERLAY),y)
         dtbo-$(CONFIG_ARCH_KONA) += \
                 kona-cdp-overlay.dtbo \
@@ -161,11 +160,50 @@ dtb-$(CONFIG_ARCH_KONA) += kona-rumi.dtb \
 endif
 
 ifeq ($(CONFIG_BUILD_ARM64_DT_OVERLAY),y)
-dtbo-$(CONFIG_ARCH_LITO) += monet-sm7250-overlay.dtbo
+dtbo-$(CONFIG_ARCH_LITO) += lito-rumi-overlay.dtbo \
+                lito-mtp-overlay.dtbo \
+                lito-v2-mtp-overlay.dtbo \
+                lito-cdp-overlay.dtbo \
+                lito-v2-cdp-overlay.dtbo \
+                lito-atp-overlay.dtbo \
+                lito-v2-atp-overlay.dtbo \
+                lito-v2-atp-lcd-overlay.dtbo \
+                lito-qrd-overlay.dtbo \
+                lito-v2-qrd-overlay.dtbo \
+                litomagnus-mtp-overlay.dtbo \
+                litomagnus-cdp-overlay.dtbo \
+                orchid-mtp-overlay.dtbo \
+                orchid-cdp-overlay.dtbo
 
-monet-sm7250-overlay.dtbo-base := lito.dtb lito-v2.dtb
+lito-rumi-overlay.dtbo-base := lito.dtb lito-v2.dtb
+lito-mtp-overlay.dtbo-base := lito.dtb
+lito-v2-mtp-overlay.dtbo-base := lito-v2.dtb
+lito-cdp-overlay.dtbo-base := lito.dtb
+lito-v2-cdp-overlay.dtbo-base := lito-v2.dtb
+lito-atp-overlay.dtbo-base := lito.dtb
+lito-v2-atp-overlay.dtbo-base := lito-v2.dtb
+lito-v2-atp-lcd-overlay.dtbo-base := lito-v2.dtb
+lito-qrd-overlay.dtbo-base := lito.dtb
+lito-v2-qrd-overlay.dtbo-base := lito-v2.dtb
+litomagnus-mtp-overlay.dtbo-base := litomagnus.dtb
+litomagnus-cdp-overlay.dtbo-base := litomagnus.dtb
+orchid-mtp-overlay.dtbo-base := orchid.dtb
+orchid-cdp-overlay.dtbo-base := orchid.dtb
 else
-dtb-$(CONFIG_ARCH_LITO) += monet-sm7250.dtb
+dtb-$(CONFIG_ARCH_LITO) += lito-rumi.dtb \
+                lito-mtp.dtb \
+                lito-cdp.dtb \
+                lito-atp.dtb \
+                lito-qrd.dtb \
+                lito-v2-mtp.dtb \
+                lito-v2-cdp.dtb \
+                lito-v2-atp.dtb \
+                lito-v2-atp-lcd.dtb \
+                lito-v2-qrd.dtb \
+                litomagnus-mtp.dtb \
+                litomagnus-cdp.dtb \
+                orchid-mtp.dtb \
+                orchid-cdp.dtb
 endif
 
 ifeq ($(CONFIG_BUILD_ARM64_DT_OVERLAY),y)
@@ -459,7 +497,8 @@ dtb-$(CONFIG_ARCH_SDM429) += sdm429-mtp.dtb \
 	sda429-mtp.dtb \
 	sda429-cdp.dtb
 endif
-endif
+
+endif # CONFIG_BOARD_XIAOMI
 
 always		:= $(dtb-y)
 subdir-y	:= $(dts-dirs)

@@ -1,0 +1,36 @@
+# Xiaomi configuration options
+
+config BOARD_XIAOMI
+    bool "Xiaomi device"
+    depends on ARCH_QCOM
+    help
+      Support for Xiaomi products.
+
+config BOARD_XIAOMI_SM7250
+    bool "Xiaomi SM7250"
+    depends on ARCH_QCOM
+    select BOARD_XIAOMI
+    help
+      Support for Xiaomi SM7250 devices.
+  
+menu "Xiaomi board selection"
+
+config BOARD_PICASSO
+	bool "Xiaomi picasso board"
+    select BOARD_XIAOMI_SM7250
+	help
+	  Support for Redmi K30/K30i 5G.
+
+config BOARD_MONET
+    bool "Xiaomi monet board"
+    select BOARD_XIAOMI_SM7250
+    help
+      Support for Mi 10 Lite 5G.
+
+config BOARD_VANGOGH
+    bool "Xiaomi vangogh board"
+    select BOARD_XIAOMI_SM7250
+    help
+      Support for Mi 10 Lite Zoom.
+
+endmenu
