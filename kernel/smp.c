@@ -198,6 +198,7 @@ void generic_smp_call_function_single_interrupt(void)
 	flush_smp_call_function_queue(true);
 }
 
+extern void sched_ttwu_pending(void *);
 extern void irq_work_single(void *);
 
 /**
