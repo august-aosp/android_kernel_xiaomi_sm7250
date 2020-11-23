@@ -45,7 +45,7 @@
 			(index < MAX_DSI_CTRLS_PER_DISPLAY); index++)
 
 #define DSI_WARN(fmt, ...)	DRM_WARN("[msm-dsi-warn]: "fmt, ##__VA_ARGS__)
-#define DSI_ERR(fmt, ...)	DRM_DEV_ERROR(NULL, "[msm-dsi-error]: " fmt, \
+#define DSI_ERR(fmt, ...)	DRM_DEV_DEBUG(NULL, "[msm-dsi-error]: " fmt, \
 								##__VA_ARGS__)
 #define DSI_INFO(fmt, ...)	DRM_DEV_DEBUG(NULL, "[msm-dsi-info]: "fmt, \
 								##__VA_ARGS__)
