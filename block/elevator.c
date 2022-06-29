@@ -983,7 +983,9 @@ static struct elevator_type *elevator_get_default(struct request_queue *q)
 	if (q->nr_hw_queues != 1)
 		return NULL;
 
-#ifdef CONFIG_IOSCHED_BFQ
+#ifdef CONFIG_MQ_IOSCHED_SSG
+	return elevator_get(q, "ssg", false);
+#elif CONFIG_IOSCHED_BFQ
 	return elevator_get(q, "bfq", false);
 #else
 	return elevator_get(q, "mq-deadline", false);
