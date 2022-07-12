@@ -4,7 +4,7 @@
 
 config RMNET_PERF
     bool "Rmnet Perf driver"
-    default y
+    default n
     depends on RMNET
     help
       performance mode of rmnet driver
