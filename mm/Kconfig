@@ -877,6 +877,14 @@ config LRU_GEN_STATS
 	  This option has a per-memcg and per-node memory overhead.
 # }
 
+config EMERGENCY_MEMORY
+	bool "Enable emergency memory"
+	default y if BOARD_XIAOMI
+	help
+	 This enables the migration type MIGRATE_EMERGENCY which reserves
+	 a small amount of memory for non-costly non-NOWARN page allocation
+	 failure.
+
 source "mm/damon/Kconfig"
 
 endmenu
