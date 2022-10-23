@@ -2948,6 +2948,12 @@ static inline void setup_nr_node_ids(void) {}
 
 extern int want_old_faultaround_pte;
 
+#ifdef CONFIG_PROCESS_RECLAIM
+#ifdef CONFIG_RTMM
+extern unsigned long reclaim_global(unsigned long nr_to_reclaim);
+#endif
+#endif
+
 extern int reclaim_pte_range(pmd_t *pmd, unsigned long addr,
 								unsigned long end, struct mm_walk *walk);
 

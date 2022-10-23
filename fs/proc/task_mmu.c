@@ -1840,6 +1840,39 @@ enum reclaim_type {
 	RECLAIM_ALL,
 };
 
+#define FOREGROUND_APP_ADJ 0
+#define CACHED_APP_MIN_ADJ 900
+
+static bool running_state = true;
+static inline bool can_reclaim(short before_reclaim_adj,
+	struct mm_struct *mm, struct task_struct *task)
+{
+	short cur_oom_score_adj;
+
+	if (running_state == false ||
+			fatal_signal_pending(task) ||
+			task->flags & PF_EXITING ||
+			!list_empty(&mm->mmap_sem.wait_list)) {
+		pr_info("stop reclaim: force\n");
+
+		return false;
+	}
+
+	cur_oom_score_adj = task->signal->oom_score_adj;
+	if ((cur_oom_score_adj < CACHED_APP_MIN_ADJ &&
+			cur_oom_score_adj < before_reclaim_adj) ||
+			FOREGROUND_APP_ADJ == cur_oom_score_adj) {
+		pr_info("[c:%s %d, r:%s %d] adj adjust %d %d\n",
+			current->comm, current->pid,
+			task->comm, task->pid,
+			before_reclaim_adj, cur_oom_score_adj);
+
+		return false;
+	}
+
+	return true;
+}
+
 static int deactivate_pte_range(pmd_t *pmd, unsigned long addr,
 				unsigned long end, struct mm_walk *walk)
 {
@@ -2059,6 +2092,7 @@ static ssize_t reclaim_write(struct file *file, const char __user *buf,
 	struct vm_area_struct *vma;
 	enum reclaim_type type;
 	char *type_buf;
+	short before_reclaim_adj;
 
 	if (!capable(CAP_SYS_NICE))
 		return -EPERM;
@@ -2077,17 +2111,31 @@ static ssize_t reclaim_write(struct file *file, const char __user *buf,
 		type = RECLAIM_ANON;
 	else if (!strcmp(type_buf, "all"))
 		type = RECLAIM_ALL;
+	else if (!strcmp(type_buf, "start")) {
+		running_state = true;
+		return count;
+	} else if (!strcmp(type_buf, "end")) {
+		running_state = false;
+		return count;
+	}
 	else
 		return -EINVAL;
+
+	if (false == running_state)
+		return count;
 
 	task = get_proc_task(file->f_path.dentry->d_inode);
 	if (!task)
 		return -ESRCH;
 
 	mm = get_task_mm(task);
-	if (mm) {
+	if (mm && task->signal) {
+		before_reclaim_adj = task->signal->oom_score_adj;
 		down_read(&mm->mmap_sem);
 		for (vma = mm->mmap; vma; vma = vma->vm_next) {
+			if (!can_reclaim(before_reclaim_adj, mm, task))
+				break;
+
 			if (is_vm_hugetlb_page(vma))
 				continue;
 
