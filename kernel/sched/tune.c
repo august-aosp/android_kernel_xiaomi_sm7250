@@ -816,6 +816,11 @@ static struct cftype files[] = {
 		.read_u64 = prefer_high_cap_read,
 		.write_u64 = prefer_high_cap_write,
 	},
+	{
+		.name = "prefer_high_cap",
+		.read_u64 = prefer_high_cap_read,
+		.write_u64 = prefer_high_cap_write,
+	},
 	{ }	/* terminate */
 };
 
