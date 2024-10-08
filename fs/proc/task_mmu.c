@@ -2133,6 +2133,10 @@ static ssize_t reclaim_write(struct file *file, const char __user *buf,
 		before_reclaim_adj = task->signal->oom_score_adj;
 		down_read(&mm->mmap_sem);
 		for (vma = mm->mmap; vma; vma = vma->vm_next) {
+			/* Moto huangzq2: abort reclaim if app goes to foreground. */
+			if (task->signal->oom_score_adj == 0)
+                break;
+
 			if (!can_reclaim(before_reclaim_adj, mm, task))
 				break;
 
