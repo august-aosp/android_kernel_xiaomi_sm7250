@@ -3449,3 +3449,4 @@ static inline void sched_irq_work_queue(struct irq_work *work)
 #endif
 
 extern u64 avg_vruntime(struct cfs_rq *cfs_rq);
+extern bool dequeue_task(struct rq *rq, struct task_struct *p, int flags);
