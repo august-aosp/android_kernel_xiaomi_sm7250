@@ -1,5 +1,10 @@
 /* SPDX-License-Identifier: GPL-2.0-only */
 /*
+ * NOTE: This file has been modified by Sony Corporation.
+ * Modifications are Copyright 2021 Sony Corporation,
+ * and licensed under the license of the file.
+ */
+/*
  * Copyright (c) 2016-2020, The Linux Foundation. All rights reserved.
  */
 
@@ -32,7 +37,9 @@
 #define WINDOW_STATS_MAX		1
 #define WINDOW_STATS_MAX_RECENT_AVG	2
 #define WINDOW_STATS_AVG		3
-#define WINDOW_STATS_INVALID_POLICY	4
+#define WINDOW_STATS_WMA		4
+#define WINDOW_STATS_EWMA		5
+#define WINDOW_STATS_INVALID_POLICY	6
 
 #define EXITING_TASK_MARKER	0xdeaddead
 
@@ -333,6 +340,7 @@ extern void walt_rotate_work_init(void);
 extern void walt_rotation_checkpoint(int nr_big);
 extern unsigned int walt_rotation_enabled;
 extern void walt_fill_ta_data(struct core_ctl_notif_data *data);
+extern u64 walt_get_prev_group_run_sum(struct rq *rq);
 
 extern __read_mostly bool sched_freq_aggr_en;
 static inline void walt_enable_frequency_aggregation(bool enable)
