@@ -1,132 +1,184 @@
 #!/usr/bin/env bash
-# shellcheck disable=SC2199
-# shellcheck source=/dev/null
 #
-# Copyright (C) 2020-22 UtsavBalar1231 <utsavbalar1231@gmail.com>
+#  build.sh - Automic kernel building script for Rosemary Kernel
 #
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
+#  Copyright (C) 2021-2023, Crepuscular's AOSP WorkGroup
+#  Author: EndCredits <alicization.han@gmail.com>
 #
-#    http://www.apache.org/licenses/LICENSE-2.0
+#  This program is free software; you can redistribute it and/or modify
+#  it under the terms of the GNU General Public License version 2 as
+#  published by the Free Software Foundation.
 #
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-
-if ! [ -d "$HOME/tc/aosp-clang" ]; then
-echo "aosp clang not found! Cloning..."
-if ! git clone -q https://gitlab.com/ThankYouMario/android_prebuilts_clang-standalone.git --depth=1 ~/tc/aosp-clang; then
-echo "Cloning failed! Aborting..."
-exit 1
-fi
-fi
-
-if ! [ -d "$HOME/tc/aarch64-linux-android-4.9" ]; then
-echo "aarch64-linux-android-4.9 not found! Cloning..."
-if ! git clone -q https://github.com/LineageOS/android_prebuilts_gcc_linux-x86_aarch64_aarch64-linux-android-4.9.git --depth=1 --single-branch ~/tc/aarch64-linux-android-4.9; then
-echo "Cloning failed! Aborting..."
-exit 1
-fi
-fi
-
-GCC_64_DIR="$HOME/tc/aarch64-linux-android-4.9"
-KBUILD_COMPILER_STRING=$($HOME/tc/aosp-clang/bin/clang --version | head -n 1 | perl -pe 's/\(http.*?\)//gs' | sed -e 's/  */ /g' -e 's/[[:space:]]*$//')
-KBUILD_LINKER_STRING=$($HOME/tc/aosp-clang/bin/ld.lld --version | head -n 1 | perl -pe 's/\(http.*?\)//gs' | sed -e 's/  */ /g' -e 's/[[:space:]]*$//' | sed 's/(compatible with [^)]*)//')
-export KBUILD_COMPILER_STRING
-export KBUILD_LINKER_STRING
-
-DEVICE=$1
-TYPE=$2
-IS_KSU=""
-
-if [ "${DEVICE}" = "monet" ]; then
-if [ "${TYPE}" = "ksu" ]; then
-DEFCONFIG=monet-ksu_defconfig
-IS_KSU="-ksu"
-else
-DEFCONFIG=monet_defconfig
-fi
-fi
-
-#
-# Enviromental Variables
+#  Configure your .env before using this script.
 #
 
-DATE=$(date '+%Y%m%d-%H%M')
+source .env.sh
 
-# Set our directory
-OUT_DIR=out/
+ARCH=arm64;
+CC=clang;
+LD=ld.lld
+CLANG_TRIPLE=aarch64-linux-gnu-;
+CROSS_COMPILE=aarch64-linux-gnu-;
+CROSS_COMPILE_COMPAT=arm-linux-gnueabi-;
+THREAD=$(nproc --all);
+CC_ADDITION_FLAGS="LD=$LD";
+OUT="out";
 
-VERSION="Skizo${IS_KSU}-${DEVICE}-${DATE}"
+TARGET_KERNEL_FILE=arch/arm64/boot/Image;
+TARGET_KERNEL_DTB=arch/arm64/boot/dtb;
+TARGET_KERNEL_DTBO=arch/arm64/boot/dtbo.img
+TARGET_KERNEL_NAME=Skizo-Kernel;
 
-# Export Zip name
-export ZIPNAME="${VERSION}.zip"
+DEFCONFIG_PATH=arch/arm64/configs
+DEFCONFIG_NAME="milito_defconfig vendor/debugfs.config vendor/xiaomi/$DEVICE.config";
+DISABLE_KSU_FRAGMENT=vendor/disable_ksu.config;
 
-# How much kebabs we need? Kanged from @raphielscape :)
-if [[ -z "${KEBABS}" ]]; then
-    COUNT="$(grep -c '^processor' /proc/cpuinfo)"
-    export KEBABS="$((COUNT + 2))"
-fi
+TARGET_KERNEL_MOD_VERSION=$(make kernelversion);
 
-echo "Jobs: ${KEBABS}"
+START_SEC=$(date +%s);
+CURRENT_TIME=$(date '+%Y-%m%d%H%M');
 
-ARGS="ARCH=arm64 \
-O=${OUT_DIR} \
-CC=clang \
-LLVM=1 \
-LLVM_IAS=1 \
-CLANG_TRIPLE=aarch64-linux-gnu- \
-CROSS_COMPILE=$GCC_64_DIR/bin/aarch64-linux-android- \
--j${KEBABS}"
+ANYKERNEL_PATH=AnyKernel3;
 
-dts_source=arch/arm64/boot/dts/vendor/qcom
+WITH_KERNELSU=1
 
-START=$(date +"%s")
+link_all_dtb_files(){
+    find $OUT/arch/arm64/boot/dts/vendor/qcom -name '*.dtb' -exec cat {} + > $OUT/arch/arm64/boot/dtb;
+}
 
-# Set compiler Path
-export PATH="$HOME/tc/aosp-clang/bin:$PATH"
-export LD_LIBRARY_PATH=${HOME}/tc/aosp-clang/lib64:$LD_LIBRARY_PATH
+make_defconfig(){
+    echo "------------------------------";
+    echo " Building Kernel Defconfig..";
+    echo "------------------------------";
 
-echo "------ Starting Compilation ------"
+    if [ $WITH_KERNELSU == 0 ]; then
+        DEFCONFIG_NAME="$DEFCONFIG_NAME $DISABLE_KSU_FRAGMENT"
+    fi
 
-# Make defconfig
-make -j${KEBABS} ${ARGS} ${DEFCONFIG}
+    make CC=$CC ARCH=$ARCH CROSS_COMPILE=$CROSS_COMPILE CROSS_COMPILE_COMPAT=$CROSS_COMPILE_COMPAT CLANG_TRIPLE=$CLANG_TRIPLE LLVM=1 LLVM_IAS=1 $CC_ADDITION_FLAGS O=$OUT -j$THREAD $DEFCONFIG_NAME;
+}
 
-# Make olddefconfig
-cd ${OUT_DIR} || exit
-make -j${KEBABS} ${ARGS} CC="ccache clang" HOSTCC="ccache gcc" HOSTCXX="cache g++" olddefconfig
-cd ../ || exit
+build_kernel(){
+    echo "------------------------------";
+    echo " Building Kernel ...........";
+    echo "------------------------------";
 
-make -j${KEBABS} ${ARGS} CC="ccache clang" HOSTCC="ccache gcc" HOSTCXX="ccache g++" 2>&1 | tee build.log
+    make CC=$CC ARCH=$ARCH CROSS_COMPILE=$CROSS_COMPILE CROSS_COMPILE_COMPAT=$CROSS_COMPILE_COMPAT CLANG_TRIPLE=$CLANG_TRIPLE LLVM=1 LLVM_IAS=1 $CC_ADDITION_FLAGS O=$OUT -j$THREAD;
+    END_SEC=$(date +%s);
+    COST_SEC=$[ $END_SEC-$START_SEC ];
+    echo "Kernel Build Costed $(($COST_SEC/60))min $(($COST_SEC%60))s"
 
-find ${OUT_DIR}/$dts_source -name '*.dtb' -exec cat {} + >${OUT_DIR}/arch/arm64/boot/dtb
+}
 
-git checkout arch/arm64/boot/dts/vendor &>/dev/null
+generate_flashable(){
+    echo "------------------------------";
+    echo " Generating Flashable Kernel";
+    echo "------------------------------";
 
-echo "------ Finishing Build ------"
+    cd $OUT;
+    
+    if [ ! -d $ANYKERNEL_PATH ]; then
+        echo ' Getting AnyKernel ';
+        git clone https://github.com/august-aosp/AnyKernel3.git $ANYKERNEL_PATH;
+        envsubst < $ANYKERNEL_PATH/anykernel.sh | tee $ANYKERNEL_PATH/anykernel.sh;
+    else
+        echo ' Anykernel 3 Detected. Skipping download ';
+    fi
 
-END=$(date +"%s")
-DIFF=$((END - START))
-zipname="$VERSION.zip"
-if [ -f "out/arch/arm64/boot/Image" ] && [ -f "out/arch/arm64/boot/dtb" ]; then
-        if [ "${DEVICE}" = "monet" ]; then
-          git clone -q https://github.com/alecchangod/AnyKernel3.git -b monet
-	fi
-	cp out/arch/arm64/boot/Image AnyKernel3
-	cp out/arch/arm64/boot/dtb AnyKernel3
-	rm -f *zip
-	cd AnyKernel3
-	zip -r9 "../${zipname}" * -x '*.git*' README.md *placeholder >> /dev/null
-	cd ..
-	rm -rf AnyKernel3
-	echo -e "\nCompleted in $((SECONDS / 60)) minute(s) and $((SECONDS % 60)) second(s) !"
-	echo ""
-	echo -e ${zipname} " is ready!"
-	echo ""
-        curl --upload-file ${zipname} https://free.keep.sh
-else
-	echo -e "\n Compilation Failed!"
-fi
+    echo ' Removing old package file ';
+    rm -rf $ANYKERNEL_PATH/$TARGET_KERNEL_NAME*;
+
+    echo ' Copying Kernel File '; 
+    cp -r $TARGET_KERNEL_FILE $ANYKERNEL_PATH/;
+    cp -r $TARGET_KERNEL_DTB $ANYKERNEL_PATH/;
+    cp -r $TARGET_KERNEL_DTBO $ANYKERNEL_PATH/;
+
+    echo ' Packaging flashable Kernel ';
+    cd $ANYKERNEL_PATH;
+    zip -q -r $TARGET_KERNEL_NAME-$CURRENT_TIME-$TARGET_KERNEL_MOD_VERSION.zip *;
+
+    echo " Target File:  $OUT/$ANYKERNEL_PATH/$TARGET_KERNEL_NAME-$CURRENT_TIME-$TARGET_KERNEL_MOD_VERSION.zip ";
+}
+
+save_defconfig(){
+    echo "------------------------------";
+    echo " Saving kernel config ........";
+    echo "------------------------------";
+
+    make CC=$CC ARCH=$ARCH CROSS_COMPILE=$CROSS_COMPILE CROSS_COMPILE_COMPAT=$CROSS_COMPILE_COMPAT CLANG_TRIPLE=$CLANG_TRIPLE $CC_ADDITION_FLAGS O=$OUT -j$THREAD savedefconfig;
+    END_SEC=$(date +%s);
+    COST_SEC=$[ $END_SEC-$START_SEC ];
+    echo "Finished. Kernel config saved to $OUT/defconfig"
+    echo "Moving kernel defconfig to source tree"
+    mv $OUT/defconfig $DEFCONFIG_PATH/$DEFCONFIG_NAME
+    echo "Kernel Config Build Costed $(($COST_SEC/60))min $(($COST_SEC%60))s"
+
+}
+
+clean(){
+    echo "Clean source tree and build files..."
+    make mrproper -j$THREAD;
+    make clean -j$THREAD;
+    rm -rf $OUT;
+}
+
+main(){
+    if [[ $2 == "noksu" ]]; then
+        echo "Building without Kernel SU"
+        WITH_KERNELSU=0
+    fi
+    if [ $1 == "help" -o $1 == "-h" ]
+    then
+        echo "build.sh: A very simple Kernel build helper"
+        echo "usage: build.sh <operation> <optional argument>"
+        echo
+        echo "Build operations:"
+        echo "    all             Perform a build without cleaning."
+        echo "    cleanbuild      Clean the source tree and build files then perform a all build."
+        echo
+        echo "    flashable       Only generate the flashable zip file. Don't use it before you have built once."
+        echo "    savedefconfig   Save the defconfig file to source tree."
+        echo "    defconfig       Only build kernel defconfig"
+        echo "    help ( -h )     Print help information."
+        echo "    version         Display the version number."
+        echo
+        echo "Optional argument"
+        echo "    noksu           Build without Kernel SU (with \"all\" and \"defconfig\" operation)"
+        echo
+    elif [ $1 == "savedefconfig" ]
+    then
+        save_defconfig;
+    elif [ $1 == "cleanbuild" ]
+    then
+        clean;
+        make_defconfig;
+        build_kernel;
+        link_all_dtb_files;
+        generate_flashable;
+    elif [ $1 == "flashable" ]
+    then
+        generate_flashable;
+    elif [ $1 == "kernelonly" ]
+    then
+        make_defconfig
+        build_kernel
+    elif [ $1 == "all" ]
+    then
+        make_defconfig
+        build_kernel
+        link_all_dtb_files
+        generate_flashable
+    elif [ $1 == "defconfig" ]
+    then
+        make_defconfig;
+    elif [ $1 == "version" ] 
+    then 
+        echo "Current version is: $LOCAL_VERSION_NUMBER"
+    else
+        echo "Incorrect usage. Please run: "
+        echo "  bash build.sh help (or -h) "
+        echo "to display help message."
+    fi
+}
+
+main "$1" "$2";
