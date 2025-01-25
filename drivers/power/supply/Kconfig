@@ -650,4 +650,6 @@ config G7A_CHG
 	def_bool y
 
 source "drivers/power/supply/qcom/Kconfig"
+source "drivers/power/supply/ti/Kconfig"
+source "drivers/power/supply/maxim/Kconfig"
 endif # POWER_SUPPLY
