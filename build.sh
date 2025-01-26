@@ -70,6 +70,14 @@ build_kernel(){
 
 }
 
+patch_kernel_properties(){
+    sed -i \
+    -e "s|\${KERNEL_STRING}|${KERNEL_STRING}|g" \
+    -e "s|\${DEVICE}|${DEVICE}|g" \
+    -e "s|\${SUPPORTED_VERSIONS}|${SUPPORTED_VERSIONS}|g" \
+    $ANYKERNEL_PATH/anykernel.sh;
+}
+
 generate_flashable(){
     echo "------------------------------";
     echo " Generating Flashable Kernel";
@@ -80,7 +88,7 @@ generate_flashable(){
     if [ ! -d $ANYKERNEL_PATH ]; then
         echo ' Getting AnyKernel ';
         git clone https://github.com/august-aosp/AnyKernel3.git $ANYKERNEL_PATH;
-        envsubst < $ANYKERNEL_PATH/anykernel.sh | tee $ANYKERNEL_PATH/anykernel.sh;
+        patch_kernel_properties;
     else
         echo ' Anykernel 3 Detected. Skipping download ';
     fi
