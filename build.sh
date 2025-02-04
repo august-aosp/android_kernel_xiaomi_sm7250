@@ -27,10 +27,10 @@ OUT="out";
 TARGET_KERNEL_FILE=arch/arm64/boot/Image;
 TARGET_KERNEL_DTB=arch/arm64/boot/dtb;
 TARGET_KERNEL_DTBO=arch/arm64/boot/dtbo.img
-TARGET_KERNEL_NAME=Skizo-Kernel;
+TARGET_KERNEL_NAME=Hanabi-Kernel;
 
 DEFCONFIG_PATH=arch/arm64/configs
-DEFCONFIG_NAME="milito_defconfig vendor/debugfs.config vendor/xiaomi/$DEVICE.config";
+DEFCONFIG_NAME="vendor/${DEVICE}_defconfig";
 DISABLE_KSU_FRAGMENT=vendor/disable_ksu.config;
 
 TARGET_KERNEL_MOD_VERSION=$(make kernelversion);
