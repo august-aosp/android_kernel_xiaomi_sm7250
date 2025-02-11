@@ -1,9 +1,4 @@
 /*
- * NOTE: This file has been modified by Sony Corporation.
- * Modifications are Copyright 2021 Sony Corporation,
- * and licensed under the license of the file.
- */
-/*
  * sysctl.c: General linux system control interface
  *
  * Begun 24 March 1995, Stephen Tweedie
@@ -136,7 +131,6 @@ static int __maybe_unused one = 1;
 static int __maybe_unused two = 2;
 static int __maybe_unused three = 3;
 static int __maybe_unused four = 4;
-static int __maybe_unused six = 6;
 static int int_max = INT_MAX;
 static unsigned long zero_ul;
 static unsigned long one_ul = 1;
@@ -418,7 +412,7 @@ static struct ctl_table kern_table[] = {
 		.mode		= 0644,
 		.proc_handler   = proc_dointvec_minmax,
 		.extra1		= &zero,
-		.extra2		= &six,
+		.extra2		= &four,
 	},
 	{
 		.procname       = "sched_cpu_high_irqload",
