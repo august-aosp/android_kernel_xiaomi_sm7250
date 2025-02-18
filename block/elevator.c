@@ -975,9 +975,25 @@ out:
 }
 
 /*
- * For blk-mq devices, we default to using mq-deadline, if available, for single
- * queue devices.  If deadline isn't available OR we have multiple queues,
- * default to "none".
+ * For single queue devices, default to using mq-deadline. If we have multiple
+ * queues or mq-deadline is not available, default to "none".
+ */
+static struct elevator_type *elevator_get_default(struct request_queue *q)
+{
+	if (q->nr_hw_queues != 1)
+		return NULL;
+
+#ifdef CONFIG_IOSCHED_BFQ
+	return elevator_get(q, "bfq", false);
+#else
+	return elevator_get(q, "mq-deadline", false);
+#endif
+}
+
+/*
+ * For blk-mq devices, use default elevator settings. If no suitable elevator
+ * is find or if the chosen elevator initialization fails,
+ * fall back to the "none" elevator (no elevator).
  */
 int elevator_init_mq(struct request_queue *q)
 {
@@ -987,22 +1003,14 @@ int elevator_init_mq(struct request_queue *q)
 	if (q->tag_set && q->tag_set->flags & BLK_MQ_F_NO_SCHED_BY_DEFAULT)
 		return 0;
 
-	if (q->nr_hw_queues != 1)
-		return 0;
-
 	WARN_ON_ONCE(test_bit(QUEUE_FLAG_REGISTERED, &q->queue_flags));
 
 	if (unlikely(q->elevator))
 		goto out;
-	if (IS_ENABLED(CONFIG_IOSCHED_BFQ)) {
-		e = elevator_get(q, "bfq", false);
-		if (!e)
-			goto out;
-	} else {
-		e = elevator_get(q, "mq-deadline", false);
-		if (!e)
-			goto out;
-	}
+	e = elevator_get_default(q);
+	if (!e)
+		goto out;
+
 	err = blk_mq_init_sched(q, e);
 	if (err)
 		elevator_put(e);
