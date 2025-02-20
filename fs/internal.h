@@ -76,6 +76,8 @@ extern int finish_automount(struct vfsmount *, struct path *);
 
 extern int sb_prepare_remount_readonly(struct super_block *);
 
+int path_umount(struct path *path, int flags);
+
 extern void __init mnt_init(void);
 
 extern int __mnt_want_write_file(struct file *);
