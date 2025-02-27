@@ -12502,6 +12502,7 @@ void trigger_load_balance(struct rq *rq)
 #else
 	/* Don't need to rebalance while attached to NULL domain */
 	if (unlikely(on_null_domain(rq)))
+		return;
 #endif
 	if (time_after_eq(jiffies, rq->next_balance))
 		raise_softirq(SCHED_SOFTIRQ);
