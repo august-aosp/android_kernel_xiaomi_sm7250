@@ -1,5 +1,6 @@
 #define pr_fmt(fmt)  "rtmm : " fmt
 
+#include <linux/pagewalk.h>
 #include <linux/module.h>
 #include <linux/kernel.h>
 #include <linux/mm.h>
@@ -180,8 +181,9 @@ static int mem_process_reclaim(pid_t pid, int type, int nr_to_reclaim)
 	struct task_struct *task;
 	struct mm_struct *mm;
 	struct vm_area_struct *vma;
-	struct mm_walk reclaim_walk = {};
-	struct reclaim_param rp;
+	const struct mm_walk_ops reclaim_walk_ops = {
+		.pmd_entry = reclaim_pte_range,
+	};
 	int ret = 0;
 
 	task = find_get_task_by_pid(pid);
@@ -193,14 +195,6 @@ static int mem_process_reclaim(pid_t pid, int type, int nr_to_reclaim)
 		ret = -EINVAL;
 		goto out;
 	}
-
-	reclaim_walk.mm = mm;
-	reclaim_walk.pmd_entry = reclaim_pte_range;
-
-	rp.nr_scanned = 0;
-	rp.nr_to_reclaim = nr_to_reclaim;
-	rp.nr_reclaimed = 0;
-	reclaim_walk.private = &rp;
 
 	down_read(&mm->mmap_sem);
 
@@ -214,9 +208,8 @@ static int mem_process_reclaim(pid_t pid, int type, int nr_to_reclaim)
 		if (type == RECLAIM_PAGE_FILE && !vma->vm_file)
 			continue;
 
-		rp.vma = vma;
-		ret = walk_page_range(vma->vm_start, vma->vm_end,
-				      &reclaim_walk);
+		ret = walk_page_range(mm, vma->vm_start, vma->vm_end,
+				      &reclaim_walk_ops, vma);
 		if (ret)
 			break;
 	}
@@ -229,16 +222,10 @@ static int mem_process_reclaim(pid_t pid, int type, int nr_to_reclaim)
 out:
 	put_task_struct(task);
 
-	/*  -EPIPE is returned in reclaim_pte_range() to break the iteration,
-	 *  it is a valid value, so we set the ret as 0 here.
-	 */
-	if (ret == -EPIPE)
-		ret = 0;
-
-	pr_info("process reclaim: pid %d, page_type %d, try to reclaim %d, reclaimed %d(scan %d)\n",
-		pid, type, nr_to_reclaim, rp.nr_reclaimed, rp.nr_scanned);
-
-	return rp.nr_reclaimed;
+	// Required to return nr_claimed. However, it only useful for logging
+	// and we do not have this info in the current implementation.
+	// So return 1 for now.
+	return 1;
 }
 #else
 static int mem_process_reclaim(pid_t pid, int type, int nr_to_reclaim)
