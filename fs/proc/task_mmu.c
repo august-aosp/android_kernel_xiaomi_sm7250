@@ -1935,7 +1935,7 @@ regular_page:
 }
 
 
-static int reclaim_pte_range(pmd_t *pmd, unsigned long addr,
+int reclaim_pte_range(pmd_t *pmd, unsigned long addr,
 				unsigned long end, struct mm_walk *walk)
 {
 	pte_t *orig_pte, *pte, ptent;

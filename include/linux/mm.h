@@ -36,6 +36,7 @@ struct file_ra_state;
 struct user_struct;
 struct writeback_control;
 struct bdi_writeback;
+struct mm_walk;
 
 void init_mm_internals(void);
 
@@ -2946,6 +2947,9 @@ static inline void setup_nr_node_ids(void) {}
 #endif
 
 extern int want_old_faultaround_pte;
+
+extern int reclaim_pte_range(pmd_t *pmd, unsigned long addr,
+								unsigned long end, struct mm_walk *walk);
 
 #endif /* __KERNEL__ */
 #endif /* _LINUX_MM_H */
