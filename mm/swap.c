@@ -1165,7 +1165,11 @@ EXPORT_SYMBOL(pagevec_lookup_range_nr_tag);
 void __init swap_setup(void)
 {
 	/* Tweak for Android devices using zram */
+#ifdef CONFIG_ZRAM_WRITEBACK
+	page_cluster = 3;
+#else
 	page_cluster = 0;
+#endif
 
 	/*
 	 * Right now other parts of the system means that we
